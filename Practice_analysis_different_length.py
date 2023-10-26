@@ -13,17 +13,11 @@ Created on Fri Oct 13 11:24:48 2023
 """
 
 from Bio import AlignIO
-from Bio.Align import MultipleSeqAlignment
-from Bio.Align import PairwiseAligner
-from Bio import SeqIO
 import numpy as np
-import itertools
-import pandas as pd
-import random
 from matplotlib import pyplot as plt
 
 #Where the nexus file is saved
-nexus_file = "C:/Users/willi/BioinformaticsProject/Data/ExampleData.nex"
+nexus_file = "C:/Users/willi/BioinformaticsProject/Data/HBV_data.nex"
 
 
 class delta_plot():
@@ -100,6 +94,18 @@ class delta_plot():
         
     
     def array(self):
+        '''
+        This function converts sequences and appends individual nucleotides 
+        from the sequence to a list of lists
+
+        Returns
+        -------
+        empty_array : list of lists
+            DESCRIPTION.
+            Empty array contains a lists of lists. With each list containing
+            nucleotides from that sequence alignment
+
+        '''
         empty_array = []
         for i in range(0,len(list(self.alignment))):
             empty_array.append(self.alignment[i])
@@ -115,6 +121,7 @@ class delta_plot():
         d3 = distance_array[6]+distance_array[2]
         distance_list = [d1,d2,d3]
         distance_list.sort()
+        
 
         delta_value = (distance_list[2]-distance_list[1])/(distance_list[2]-distance_list[0])
         return delta_value
@@ -132,6 +139,18 @@ class delta_plot():
             
         
     def random_sample(self):
+        '''
+        This function is creating random samples each containing one constant
+        taxa for the number defined. This allows us to calculate the mean
+        delta value for each taxa.
+
+        Returns
+        -------
+        sample : List of lists
+            DESCRIPTION.
+            List of lists containing random samples with a constant taxa.
+
+        '''
         # This code generates random indexes, from 0 to 4 and pastes them in a list.
         # 5 samples are taken for each index
         list_sequences = self.array()
@@ -143,14 +162,16 @@ class delta_plot():
         for i in range(0,len(list_sequences)):
             #List1 is a list of indexes 0 to 4
             list1 = list(range(len(list_sequences)))
+            
             #Remove index
             list1.pop(i)
             #Another for loop to create the random choice-List of quartets
             # With 5 quartets for each taxa - can be changed.
             
-            for j in range(0,500):
+            for j in range(0,100):
                 
                 random_choice = list(np.random.choice(list1,3))
+                
                 
                 while True:
                     random_choice.sort()
@@ -182,7 +203,7 @@ class delta_plot():
         #Split the delta values into lists contianing each taxa
         array_delta_values = np.array(list_delta_values)
         
-        split_list = np.split(array_delta_values,5)
+        split_list = np.split(array_delta_values,len(self.alignment))
         
        
         
@@ -190,6 +211,8 @@ class delta_plot():
         for i in split_list:
             mean =np.mean(i)
             list_mean_delta.append(mean)
+       
+        
         return list_mean_delta,array_delta_values
             
     def mean_delta_plot(self):
@@ -200,7 +223,7 @@ class delta_plot():
             list_taxa.append(i+1)
         
         mean_plot = plt.bar(list_taxa,mean_delta_array,width =0.2)
-        plt.ylim(0, 0.3)
+        plt.ylim(0, 0.5)
         plt.xlabel("Taxa")
         plt.ylabel("Mean delta value")
         plt.show()
@@ -208,14 +231,14 @@ class delta_plot():
     
     def overall_delta_plot(self):
         list_mean_delta, array_delta_values = self.delta_random_mean()
-        plt.hist(array_delta_values,bins=10)
+        overall_delt_plot = plt.hist(array_delta_values,bins=10)
         plt.show()
-        print(array_delta_values)
+        return overall_delt_plot
     
     def different_length_matrix2(self,array):
         distance_matrix2 = np.empty((4,4))
         array2=[]
-        
+      
         #Convert array values into integers
         for i in array:
             i =int(i)
@@ -225,10 +248,11 @@ class delta_plot():
         for i,j in enumerate(array2):
             for k in range(0,4):
                 different_nucleotides=0
+                
                 if(len(self.alignment[j])>len(self.alignment[array2[k]])):
                     different_nucleotides = different_nucleotides + (len(self.alignment[j])-len(self.alignment[array2[k]]))
                 elif (len(self.alignment[array2[k]]))>len(self.alignment[j]):
-                    different_nucleotides = different_nucleotides + (len(self.alignment[array2[k]])-len(self.alignment[j]))
+                   different_nucleotides = different_nucleotides + (len(self.alignment[array2[k]])-len(self.alignment[j]))
                 
                 min_range = min(len(self.alignment[array2[k]]),len(self.alignment[j]))
                 for m in range(0,min_range): 
@@ -237,7 +261,7 @@ class delta_plot():
                 
                 distance_matrix2[i][k]=different_nucleotides
             
-                
+         
         return distance_matrix2   
         
         
@@ -256,7 +280,12 @@ class delta_plot():
 
     
 sequence = delta_plot(nexus_file)
+
+list_mean_delta,array_delta_values = sequence.delta_random_mean()
+print(list_mean_delta)
+
 print(sequence.mean_delta_plot())
+
 # =============================================================================
 # alignment = AlignIO.read(nexus_file, "nexus")
 # print(alignment[1])
