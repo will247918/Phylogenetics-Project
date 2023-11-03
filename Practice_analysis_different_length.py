@@ -15,6 +15,7 @@ Created on Fri Oct 13 11:24:48 2023
 from Bio import AlignIO
 import numpy as np
 from matplotlib import pyplot as plt
+import itertools
 
 #Where the nexus file is saved
 nexus_file = "C:/Users/willi/BioinformaticsProject/Data/HBV_data.nex"
@@ -124,12 +125,14 @@ class delta_plot():
         
 
         delta_value = (distance_list[2]-distance_list[1])/(distance_list[2]-distance_list[0])
+        #print(f'Delta value is {distance_list}')
         return delta_value
     
     def delta_value_2(self,array):
-        
+        print(f'array is {array}')
         delta_list = []
         for i in array:
+            
             individual_matrix = self.different_length_matrix2(i)
             delta_value_matrix = self.delta_value(individual_matrix)
             delta_list.append(delta_value_matrix)
@@ -168,7 +171,7 @@ class delta_plot():
             #Another for loop to create the random choice-List of quartets
             # With 5 quartets for each taxa - can be changed.
             
-            for j in range(0,100):
+            for j in range(0,20):
                 
                 random_choice = list(np.random.choice(list1,3))
                 
@@ -195,6 +198,7 @@ class delta_plot():
     def delta_random_mean(self):
         #Call the random_smaple function to generate random lists of taxa
         sample= self.random_sample()
+        print(sample)
         #Call the delta_values funciton to produce a list of delta values for the samples
         list_delta_values = self.delta_value_2(sample)
         #Create an empty list to store mean delta values for each taxa
@@ -240,6 +244,7 @@ class delta_plot():
         array2=[]
       
         #Convert array values into integers
+        
         for i in array:
             i =int(i)
             array2.append(i)
@@ -261,14 +266,40 @@ class delta_plot():
                 
                 distance_matrix2[i][k]=different_nucleotides
             
-         
+        
         return distance_matrix2   
         
         
+    def all_samples(self):
+        s = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}
+        n = 4        
+        subset_array = list(itertools.combinations(s, n))
         
+        return subset_array
+        
+    def delta_plot1(self):
+        print(self.alignment[0])
+        
+        array4 = self.all_samples()
+        
+        array5=[]
+        
+        for i in range(0,len(array4)):
+            array5.append(list(array4[i]))
+        
+        delta_values_list=self.delta_value_2(array5)
+        
+   
+        
+        print(delta_values_list)
+        
+           
             
         
         
+        overall_delt = plt.hist(delta_values_list,bins=10)
+        plt.show()
+        return overall_delt
         
 
 
@@ -281,11 +312,11 @@ class delta_plot():
     
 sequence = delta_plot(nexus_file)
 
-list_mean_delta,array_delta_values = sequence.delta_random_mean()
-print(list_mean_delta)
+#list_mean_delta,array_delta_values = sequence.delta_random_mean()
 
-print(sequence.mean_delta_plot())
-
+#print(sequence.mean_delta_plot())
+print(sequence.overall_delta_plot()())
+print(sequence.delta_plot1())
 # =============================================================================
 # alignment = AlignIO.read(nexus_file, "nexus")
 # print(alignment[1])
