@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 21 11:43:07 2023
 
-@author: willi
-"""
 
 # -*- coding: utf-8 -*-
 """
@@ -24,6 +19,21 @@ nexus_file = "C:/Users/willi/BioinformaticsProject/Data/HBV_data.nex"
 class delta_plot():
     
     def __init__(self,nexus_file):
+        '''
+        Initialise the class, this outputs the alignment of the sequences by 
+        utilising the nexus file format.
+
+        Parameters
+        ----------
+        nexus_file : nex
+            This function recieves the nexus file as an input, which is a file 
+            type commonly used in bioinformatics analysis.
+
+        Returns
+        -------
+        None.
+
+        '''
         #Alignment of the sequence data in the NEXUS file
         
         data = AlignIO.read(nexus_file, "nexus") 
@@ -36,6 +46,18 @@ class delta_plot():
         
 
     def distance_matrix(self):
+        '''
+        This function, forms the overall distance matrix from the alignment of 
+        all sequences.
+
+        Returns
+        -------
+        distance_matrix : numpy array
+            The distance matrix calculates the difference in nucleotides between 
+            the different sequences and ouputs them in a matrix form.
+            
+
+        '''
         self.alignment = [list(string) for string in self.alignment]
         #Create an empty matrix
         distance_matrix = np.empty(((len(self.alignment)),len(self.alignment)))
@@ -69,6 +91,24 @@ class delta_plot():
     
     #Input any 4 indexed array and will output the distance matrix
     def distance_matrix2(self,array):
+        '''
+        This function, instead of caluclating the distance matrix for all the 
+        sequences, calculates the distance matrix for 4 taxa. This is important
+        when calculating the delta value between the taxa.
+
+        Parameters
+        ----------
+        array : numpy array
+            This numpy array contains random numbers which are used to identify
+            the index of the sequence from its alignment.
+
+        Returns
+        -------
+        distance_matrix2 : numpy array
+            This matrix is a 4x4 matrix, showing the alignment between the 4 taxa
+            seqeunces, which can be used to calculate the delta values.
+
+        '''
         distance_matrix2 = np.empty((4,4))
         array2=[]
         
@@ -107,12 +147,30 @@ class delta_plot():
             nucleotides from that sequence alignment
 
         '''
+        #Create an empty list
         empty_array = []
+        #Append the sequences to a list
         for i in range(0,len(list(self.alignment))):
             empty_array.append(self.alignment[i])
         return empty_array
     
     def delta_value(self,matrix):
+        '''
+        This function is used to calculate the delta value from a 4x4 matrix
+        caluclated using the distance_matrix_2 matrix. This works by splitting
+        the matrix into a list and indexing the list to calculate the delta value.
+
+        Parameters
+        ----------
+        matrix : numpy array, 4x4
+            This matrix is inputted 
+
+        Returns
+        -------
+        delta_value : TYPE
+            DESCRIPTION.
+
+        '''
         distance_matrix = matrix
         distance_array = list(distance_matrix[np.triu_indices(4)])
         
@@ -301,7 +359,24 @@ class delta_plot():
         plt.show()
         return overall_delt
         
-
+    def delta_plot_java(self,file_path):
+        delta_value_list=[]
+        list_delta_file = open(file_path,'r')
+        lines = list_delta_file.readlines()
+        
+        for line in lines:
+            format(line.strip('\n'))
+            delta_value_list.append(float(line.strip()))
+        
+        return delta_value_list
+            
+    def java_histogram(self,file_path):
+        list_delta_values = self.delta_plot_java(file_path)
+        
+        overall_delt_plot = plt.hist(list_delta_values,bins=10)
+        plt.show()
+        return overall_delt_plot
+        
 
         
 
@@ -315,23 +390,8 @@ sequence = delta_plot(nexus_file)
 #list_mean_delta,array_delta_values = sequence.delta_random_mean()
 
 #print(sequence.mean_delta_plot())
-print(sequence.overall_delta_plot()())
-print(sequence.delta_plot1())
-# =============================================================================
-# alignment = AlignIO.read(nexus_file, "nexus")
-# print(alignment[1])
-# list1=[]
-# for x in alignment:
-#     x = x.seq.split('-', 1)[0]
-#     x = x.rstrip()
-#     list1.append(x)
-# list1 = [list(string) for string in list1]
-# print(list1)
-# =============================================================================
-# 
-# print(sequence.delta_random_mean())
-# 
-# #print(sequence.alignment[1].seq[1])
-# print(sequence.overall_delta_plot())
-# =============================================================================
+
+file_path = "C:/Users/willi/Documents/YEAR2/Labsheets programming 1/Week6/Delta_plot/Data/output.txt"
+
+print(sequence.java_histogram(file_path))
 
