@@ -49,8 +49,9 @@ class delta_plot():
             taken from the NEXUS file.
 
         '''
-        #Initialise empty list
+        #Initialise empty lists
         distance_matrix =[]
+        names_taxa=[]
         #Open file
         file = open(nexus_file)
         number_taxa=0
@@ -59,23 +60,30 @@ class delta_plot():
             #Only read lines after the word matrix
             if 'matrix' in line:
                 for line in file:
-                    number_taxa +=1
-                    length_line = len(line)
+                    number_taxa+=1
+                    length_line = len(line)+2
                     #Split the line to only get the numbers of the matrix
                     line = line.split()
+                    
+                    names_taxa.append(line[1:2])
                     distance_matrix.append(line[2:length_line])
         
-        
+        file.close()
         #Add the numbers to a numpy array matrix
-        distance_matrix2=np.zeros((number_taxa-2,number_taxa-2))
+        distance_matrix2=np.zeros((13,13))
         for i,k in enumerate (distance_matrix):
             if len(k)==0:
                 break
-            for j in range(0,number_taxa-3):
+            for j in range(0,13):
                 distance_value = k[j]
                 distance_matrix2[i][j]=distance_value
-        file.close()     
-        return distance_matrix2
+        #Remove empty strings
+        filtered_names = [name[0] for name in names_taxa if name]
+        #Remove outer quotation marks
+        names_taxa2 = [name[1:-1] for name in filtered_names]
+        print(distance_matrix2)
+        return distance_matrix2,names_taxa2
+
 
             
     def quartet_area(self,matrix):
@@ -439,7 +447,7 @@ class delta_plot():
         #Define lists
         area_list=[]
         a_list = []
-        original_matrix = self.distance_matrix()
+        original_matrix = self.distance_matrix()[0]
         #Define a dictionary containing indexes of taxa and iterate through all
         #possible quartet combinations of them 
         s = list(range(0,original_matrix.shape[0]))
@@ -471,7 +479,7 @@ class delta_plot():
         perimeter_list=[]
         area_perimeter_list=[]
         #Import distance matrix
-        original_matrix = self.distance_matrix()
+        original_matrix = self.distance_matrix()[0]
         #Define a dictionary of all possible taxa values
         s = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}
         #Iterate through all quartet combinations, using itertoools
@@ -512,7 +520,7 @@ class delta_plot():
         #Initialise final list
         list_delta=[]
         #Obtain the overall matrix
-        original_matrix = self.distance_matrix()
+        original_matrix = self.distance_matrix()[0]
         #Define dictionary and use itertools to go through all index quartets
         s = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}
         for quartet in itertools.combinations(s,4):
@@ -540,7 +548,7 @@ class delta_plot():
 
         '''
         list_delta=[]
-        original_matrix = self.distance_matrix()
+        original_matrix = self.distance_matrix()[0]
         #Iterate through different combinations of the quartet indexes
         s = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}
         for quartet in itertools.combinations(s,4):
@@ -574,16 +582,8 @@ class delta_plot():
 
         '''
         list_delta=[]
-        area_list2=[]
-        original_matrix = self.distance_matrix()
-        #Iterate through different combinations of the quartet indexes
-        s = list(range(0,original_matrix.shape[0]))
-    
-        
-        #Define lists
-        area_list=[]
-        a_list = []
-        original_matrix = self.distance_matrix()
+     
+        original_matrix = self.distance_matrix()[0]
         #Define a dictionary containing indexes of taxa and iterate through all
         #possible quartet combinations of them 
         s = list(range(0,original_matrix.shape[0]))
@@ -609,7 +609,7 @@ class delta_plot():
             norm_data.append((i-min_delta)/(max_delta-min_delta))
             
         
-        return norm_data
+        return norm_data,min_delta,max_delta
             
         '''
         for quartet in itertools.combinations(s,4):
@@ -628,7 +628,26 @@ class delta_plot():
             return list_delta
     
     '''
+    def delta_value_3(self,matrix):
+        distance_matrix = matrix
+        #Create distance array
+        da = list(distance_matrix[np.triu_indices(4)])
+        
+
+        a,b,c,d = self.a_value(distance_matrix),self.b_value(distance_matrix),self.c_value(distance_matrix),self.d_value(distance_matrix)
+       
+       
+        #Calculate the values of s and l and multiply to calculate the area
+        #of the quadrilateral
+        s,l = self.s_l_value(distance_matrix)
+        delta_value = (s*l)/((a+s+l+c+d+s+l+b)/2)
     
+        
+        
+        
+       
+        
+        return delta_value
     
     def delta_plot1(self):
         '''
@@ -642,7 +661,7 @@ class delta_plot():
         '''
         list_cutoff=[]
         #list_area = self.list_area()
-        delta_values_list = self.area_length_mean()
+        delta_values_list = self.area_length_mean()[0]
         
         
         
@@ -658,7 +677,85 @@ class delta_plot():
         plt.show()
         print(f'Number of quartets: {len(list_cutoff)}')
         return overall_delt
+    
+    def individual_taxa_plot(self):
+        '''
+        This function aims to plot the mean delta values for individual taxa in
+        decending order. This works by calculating the mean delta value for 
+        each taxa and then sorting by size. This is extended to sorting the 
+        names as well.
 
+        Returns
+        -------
+        bar_taxa : A bar chart showing the mean delta value for each taxa.
+        sorted_names : A list of names of taxa, which correspond to the bars
+        in the plot.
+        
+
+        '''
+        #Empty list to store mean delta values
+        mean_delta_list=[]
+        
+        #Overall distance matrix from the data
+        original_matrix = self.distance_matrix()[0]
+        #Extract the names of the taxa inputted from the NEXUS file.
+        names_taxa = self.distance_matrix()[1]
+       
+        #List defining all the taxa (from 1 to n)
+        s = list(range(0,original_matrix.shape[0]))
+        min_delta = self.area_length_mean()[1]
+        max_delta = self.area_length_mean()[2]
+        
+        '''
+        This is a for loop to remove a taxa from the list s. Then calculate
+        all possible combinations of 3 taxa from the remaining list, whilst 
+        appending the taxa number back on. Therefore, for each taxa this will 
+        calculate all possible quartets. Then the delta value is calculated 
+        for all quartets containing a given taxa, hence the mean delta value 
+        for each taxa can be calculated.
+        '''
+        for const in s:
+            delta_list=[]
+            # filter out the constant number from the list
+            nums_filtered = [n for n in s if n != const]
+            
+            #Use itertools to iterate through all possible triplets
+            for quartet in itertools.combinations(nums_filtered,3):
+                
+                quartet_list = list(quartet)
+                #Append back the taxa number removed.
+                quartet_list.append(const)
+                quartet = tuple(quartet_list)
+                #Extract the quartet from the overall distance matrix
+                quartet_matrix = [[original_matrix[i][j] for j in quartet] for i in quartet]
+                
+                quartet_matrix = np.array(quartet_matrix)
+                #Calculate the delta value
+                delt_value = self.delta_value_3(quartet_matrix)
+                delta_value_norm = (delt_value-min_delta)/(max_delta-min_delta)
+                #Append to a list, representing the delta value list, where 
+                #each quartet contains the same taxon.
+                delta_list.append(delta_value_norm)
+            
+            delta_list2 = np.array(delta_list)
+            #Calculate the mean of delta value from the list for each taxon
+            delt_mean = np.mean(delta_list2)
+            
+            mean_delta_list.append(delt_mean)
+        
+        #Extract the names from the NEXUS file
+        names_delta = list(zip(mean_delta_list,names_taxa))
+        #Sort both the mean delta value for each taxon and their corresponding 
+        #names
+        sort_names_delta = sorted(names_delta,key = lambda x:x[0],reverse=True)
+        #Convert back to individual sorted lists 
+        sorted_delta,sorted_names = zip(*sort_names_delta)
+        #Plot the bar chart for each taxa
+        bar_taxa = plt.bar(s,sorted_delta)
+        plt.show()
+        
+        
+        return bar_taxa,sorted_names
     
 sequence = delta_plot(nexus_file)
 
@@ -689,7 +786,7 @@ re_delta=np.mean(array_values)
 print(sequence.delta_value(matrix))
 print(re_delta)
 '''
-print(sequence.delta_plot1())
-
+#print(sequence.delta_plot1())
+print(sequence.individual_taxa_plot())
 
 
