@@ -12,10 +12,10 @@ from matplotlib import pyplot as plt
 import itertools
 from matplotlib.ticker import PercentFormatter
 import matplotlib.ticker as mtick
-
+import math
 
 #Where the nexus file is saved
-nexus_file = "C:/Users/willi/BioinformaticsProject/Data/A-J-cons-kal153.nex"
+nexus_file = "C:/Users/willi/BioinformaticsProject/Data/Tomato_wilt_remove_recombinant.nex"
 
 
 class delta_plot():
@@ -71,12 +71,13 @@ class delta_plot():
                     distance_matrix.append(line[2:length_line])
         
         file.close()
+        #print(distance_matrix)
         #Add the numbers to a numpy array matrix
-        distance_matrix2=np.zeros((9,9))
+        distance_matrix2=np.zeros((21,21))
         for i,k in enumerate (distance_matrix):
             if len(k)==0:
                 break
-            for j in range(0,9):
+            for j in range(0,21):
                 distance_value = k[j]
                 distance_matrix2[i][j]=distance_value
         #Remove empty strings
@@ -172,7 +173,12 @@ class delta_plot():
         
         l = max(x,y)
         
-        return s/l,s,l
+        if s ==0 or l==0:
+            delta=0
+        else:
+            delta=s/l
+        
+        return delta,s,l
   
     
     
@@ -223,14 +229,16 @@ class delta_plot():
         delta_values_list = self.delta_value_calculator()
         print(f'Number of delta values are :{len(delta_values_list)}')
         
-        overall_delt = plt.hist(delta_values_list,bins=10)
-        #plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(10))
-        plt.ylabel("Proportion of total numbers")
+        overall_delt = plt.hist(delta_values_list,bins=10,ec='White',density=True)
+        plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(10))
+        plt.ylim(0,9)
+        plt.ylabel("Proportion of total number of quartets")
         plt.xlabel("Delta values")
+        plt.title("Delta plot for Tomato spotted wilt virus taxa without \n recombinants ")
         plt.show()
         return overall_delt
         
-    def average_length_quartet(self):
+    def cut_off_method(self):
         '''
         This method incorporates the 'cut-off' method. If the delta value is 
         above a certain value, these quartets are isolated. Then if the area 
@@ -243,36 +251,41 @@ class delta_plot():
         of the quartets.
 
         '''
-        #Initiate 2 empty lists to store length values
+        #Initiate 3 empty lists to store length values
         l1=[]
         l2=[]
-        area_list = []
+        #Area list for smaller area
+        area_list_small = []
+        #Area list for normal area
+        area_list=[]
+        #Call the function to get the original distance matrix
         original_matrix = self.distance_matrix()[0]
-        
+        #Keep track of the number of quartets
+        quartet_number =0 
         s = list(range(0,original_matrix.shape[0]))
 
         for quartet in itertools.combinations(s,4):
+            quartet_number+=1
             quartet_matrix = [[original_matrix[i][j] for j in quartet] for i in quartet]
             quartet_matrix = np.array(quartet_matrix)
-            if self.delta_value_2(quartet_matrix)[0] > 0.8:
+            if self.delta_value_2(quartet_matrix)[0] >=0.8:
                 s = self.delta_value_2(quartet_matrix)[1]
                 l = self.delta_value_2(quartet_matrix)[2]
                 area=s*l
-                if area<0.001:
-                    print([s,l,area])
+                area_list.append(area)
+                if area<=4.88978*10**-6:
+                    
                     #append the length values to the empty lists
                     l1.append(s)
                     l2.append(l)
-                    area_list.append(area)
-                
-        #print(l2)
-        #Convert the lists into arrays
-        print(len(area_list))
+                    area_list_small.append(area)
+      
+        
         l1 = np.array(l1)
         l2=np.array(l2)
         area_list = np.array(area_list)
-
-        return [l1.mean(),l2.mean(),area_list.mean()]
+        proportion = len(area_list_small)/quartet_number
+        return [l1.mean(),l2.mean(),area_list.mean(),proportion*100]
     def individual_taxa_plot(self):
         '''
         This function aims to plot the mean delta values for individual taxa in
@@ -293,12 +306,14 @@ class delta_plot():
         
         #Overall distance matrix from the data
         original_matrix = self.distance_matrix()[0]
+        print(original_matrix)
         #Extract the names of the taxa inputted from the NEXUS file.
         names_taxa = self.distance_matrix()[1]
        
         #List defining all the taxa (from 1 to n)
-        s = list(range(0,original_matrix.shape[0]))
         
+        s = list(range(0,original_matrix.shape[0]))
+
         '''
         This is a for loop to remove a taxa from the list s. Then calculate
         all possible combinations of 3 taxa from the remaining list, whilst 
@@ -308,10 +323,11 @@ class delta_plot():
         for each taxa can be calculated.
         '''
         for const in s:
+
             delta_list=[]
             # filter out the constant number from the list
             nums_filtered = [n for n in s if n != const]
-            
+
             #Use itertools to iterate through all possible triplets
             for quartet in itertools.combinations(nums_filtered,3):
                 
@@ -328,8 +344,10 @@ class delta_plot():
                 #Append to a list, representing the delta value list, where 
                 #each quartet contains the same taxon.
                 delta_list.append(delt_value)
+                
             
             delta_list2 = np.array(delta_list)
+            
             #Calculate the mean of delta value from the list for each taxon
             delt_mean = np.mean(delta_list2)
             
@@ -343,12 +361,20 @@ class delta_plot():
         #Convert back to individual sorted lists 
         sorted_delta,sorted_names = zip(*sort_names_delta)
         #Plot the bar chart for each taxa
-        bar_taxa = plt.bar(s,sorted_delta)
+        bar_taxa = plt.bar(np.array(s)+1,sorted_delta)
         plt.ylim(0,0.5)
         plt.xlabel("Taxa")
         plt.ylabel("Mean delta value")
+        plt.xticks(np.array(s)+1)
+        plt.title("Mean delta values of the large RNA of Tomato spotted \n wilt virus without recombinant taxa")
+        '''
+        plt.annotate("Recombinant taxa",xy=(0.7,0.3),xytext=(0.5,0.45), arrowprops=dict(facecolor='red',  arrowstyle='->', linewidth=1),
+             fontsize=12, color='blue')
+        plt.annotate("Recombinant taxa",xy=(4,0.18),xytext=(0.5,0.45), arrowprops=dict(facecolor='red',  arrowstyle='->', linewidth=1),
+             fontsize=12, color='blue')
+        '''
         plt.show()
-        
+        print(sorted_delta[0]-sorted_delta[1])
         
         return bar_taxa,sorted_names
                 
@@ -365,10 +391,11 @@ sequence = delta_plot(nexus_file)
 file_path = "C:/Users/willi/Documents/YEAR2/Labsheets programming 1/Week6/Delta_plot/Data/output.txt"
 
 #sequence.second_try()
-#print(sequence.delta_plot1())
+#print(sequence.distance_matrix())
 #print(sequence.average_length_quartet())
-print(sequence.individual_taxa_plot())
-#print(sequence.average_length_quartet())
+#print(sequence.individual_taxa_plot())
+#print(sequence.cut_off_method())
+print(sequence.delta_plot1())
 '''
 matrix = np.array([
     [0, 0.124063, 0.74625, 0.095312],

@@ -13,7 +13,7 @@ import itertools
 from matplotlib.ticker import PercentFormatter
 
 #Where the nexus file is saved
-nexus_file = "C:/Users/willi/BioinformaticsProject/Data/AB.nex"
+nexus_file = "C:/Users/willi/BioinformaticsProject/Data/Insobium_outgroup.nex"
 
 
 class delta_plot():
@@ -70,11 +70,11 @@ class delta_plot():
         
         file.close()
         #Add the numbers to a numpy array matrix
-        distance_matrix2=np.zeros((13,13))
+        distance_matrix2=np.zeros((63,63))
         for i,k in enumerate (distance_matrix):
             if len(k)==0:
                 break
-            for j in range(0,13):
+            for j in range(0,63):
                 distance_value = k[j]
                 distance_matrix2[i][j]=distance_value
         #Remove empty strings
@@ -379,8 +379,12 @@ class delta_plot():
         s = min(x,y)
         
         l = max(x,y)
+        if s ==0 or l==0:
+            delta=0
+        else:
+            delta=s/l
         
-        return s/l
+        return delta
         
     
     def different_length_matrix2(self,array):
@@ -599,8 +603,19 @@ class delta_plot():
             #Calculate the values of s and l and multiply to calculate the area
             #of the quadrilateral
             s,l = self.s_l_value(quartet_matrix)
+            #Method for dividing my minimum diagonal
+            #one_diagonal = a+s+l+c
+            #other_diagonal = d+s+l+b
+            #array_value = s*l/min(one_diagonal,other_diagonal)
+            
+            #Method for dividing my mean diagonal
             array_value = (s*l)/((a+s+l+c+d+s+l+b)/2)
+            
+            #Just the area
+            #array_value = s*l
             list_delta.append(array_value)
+            
+            #Just the area
             
         max_delta = max(list_delta)
         min_delta = min(list_delta)
@@ -640,8 +655,14 @@ class delta_plot():
         #Calculate the values of s and l and multiply to calculate the area
         #of the quadrilateral
         s,l = self.s_l_value(distance_matrix)
-        delta_value = (s*l)/((a+s+l+c+d+s+l+b)/2)
-    
+        #For area divided by minimum length
+        #delta_value = (s*l)/min(a+s+l+c,d+s+l+b)
+        
+        #Area divided by average length
+        #delta_value = (s*l)/(a+s+l+c+d+s+l+b)/2
+        
+        #Just the area
+        delta_value = s*l
         
         
         
@@ -669,7 +690,7 @@ class delta_plot():
         for j in range(0,len(delta_values_list)):
             if delta_values_list[j]>0.8:
                list_cutoff.append(j) 
-        print(np.mean(np.array(delta_values_list)))
+        print(f'Mean delta value is {np.mean(np.array(delta_values_list))}')
         overall_delt = plt.hist(delta_values_list,bins=10,density=True)
         plt.gca().yaxis.set_major_formatter(PercentFormatter(10))
         plt.ylim(0,7)
@@ -753,9 +774,32 @@ class delta_plot():
         #Plot the bar chart for each taxa
         bar_taxa = plt.bar(s,sorted_delta)
         plt.show()
-        
-        
         return bar_taxa,sorted_names
+    
+    def cut_off(self):
+        '''
+        This method incorporates the 'cut-off' method. If the delta value is 
+        above a certain value, these quartets are isolated. Then if the area 
+        of the quartet is also below a certain value the number of star like 
+        quartets can be identified.
+
+        Returns
+        -------
+        overall_delt : TYPE
+            DESCRIPTION.
+
+        '''
+        list_cutoff=[]
+        #list_area = self.list_area()
+        delta_values_list = self.area_length_mean()[0]
+      
+        
+        for j in range(0,len(delta_values_list)):
+            if delta_values_list[j]>=0.8:
+               list_cutoff.append(j) 
+        print(f'Number of quartets: {len(list_cutoff)}')
+      
+        
     
 sequence = delta_plot(nexus_file)
 
@@ -787,6 +831,13 @@ print(sequence.delta_value(matrix))
 print(re_delta)
 '''
 #print(sequence.delta_plot1())
-print(sequence.individual_taxa_plot())
+#print(sequence.cut_off())
+#print(sequence.individual_taxa_plot())
+x = np.array([[ 0, 0.022888, 0.023449, 0.023112],
+ [0.022888, 0, 0.005722, 0.005385],
+ [0.023449, 0.005722, 0, 0.003478],
+ [0.023112, 0.005385, 0.003478, 0]])
+sequence.delta_value_2(x)
+
 
 
